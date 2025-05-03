@@ -62,7 +62,7 @@ def main():
     if "engineer" in args.run:
         # Run feature engineering
         cmd = [
-            sys.executable,  # Use the current Python interpreter
+            sys.executable,
             "scripts/_01_feature_engineering.py",
             "--input-dir", args.data_dir,
         ]
@@ -71,7 +71,7 @@ def main():
     if "train" in args.run:
         # Run the model training script
         subprocess.run([
-            sys.executable,  # Use the current Python interpreter
+            sys.executable,
             "./scripts/_02_model_training_and_tuning.py",
             "--data-dir", args.data_dir,
             "--subsample-size", str(args.subsample_size),
@@ -81,8 +81,8 @@ def main():
     if "explain" in args.run:
         # Run the model explanation script (assuming you have one)
         subprocess.run([
-            sys.executable,  # Use the current Python interpreter
-            "./scripts/_03_model_explanation.py",
+            sys.executable,
+            "./scripts/_03_performance_and_explainability.py",
             "--data-dir", args.data_dir
         ])
 
