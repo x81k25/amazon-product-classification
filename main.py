@@ -13,10 +13,10 @@ def main():
 
     # Arguments matching the 00 script with defaults
     parser.add_argument(
-        "--input-dir",
+        "--input-zip",
         type=str,
         required=False,
-        default="./data/zipped",
+        default="./data/zipped/products_labeled.json.gz",
         help="Directory containing zipped files"
     )
     parser.add_argument(
@@ -42,7 +42,7 @@ def main():
         "--run",
         type=str,
         nargs="+",  # Accept multiple values
-        choices=["unzip", "engineer", "train", "explain"],
+        choices=["unzip", "engineer", "train", "explain", "apply"],
         default=["unzip", "engineer", "train", "explain"],  # Default to run all steps
         help="Specify which subprocesses to run: unzip, engineer, train, explain"
     )
@@ -54,7 +54,7 @@ def main():
         cmd = [
             sys.executable,  # Use the current Python interpreter
             "scripts/_00_unzip_and_repackage.py",
-            "--input-dir", args.input_dir,
+            "--input-zip", args.input_zip,
             "--output-dir", args.data_dir
         ]
         subprocess.run(cmd, check=True)
@@ -85,6 +85,15 @@ def main():
             "./scripts/_03_performance_and_explainability.py",
             "--data-dir", args.data_dir
         ])
+
+    if "apply" in args.run:
+        # Run the model explanation script (assuming you have one)
+        subprocess.run([
+            sys.executable,
+            "./scripts/_04_apply_model.py",
+            "--data-dir", args.data_dir
+        ])
+
 
 if __name__ == "__main__":
     main()

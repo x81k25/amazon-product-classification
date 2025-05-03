@@ -23,7 +23,7 @@ def main(input_dir):
 
 	print("Starting feature engineering process...")
 
-	df = pl.read_parquet(os.path.join(data_dir, '00_products_labeled.parquet'))
+	df = pl.read_parquet(os.path.join(data_dir, '00_products_unzipped.parquet'))
 
 	# -----------------------------------------------------------------------------
 	# initial transformations

@@ -144,6 +144,19 @@ python main.py --run train
 python main.py --run explain
 ```
 
+### Run pipeline on new unlabled data
+
+```bash
+# unzip and place output in results folder
+ python main.py --run unzip --input-zip "./data/zipped/products_unlabeled.json.gz" --data-dir "./results"
+
+# perform feature engineering
+python main.py --run engineer --data-dir "./results"
+
+# run model and store results
+
+```
+
 ### Examples
 
 1. Process data and train with a larger subsample:
@@ -171,7 +184,7 @@ python main.py --input-dir ./raw_data --data-dir ./processed_data
 - Hyperparameter tuning can be time-consuming with larger subsample sizes and more random iterations.
 
 
-## workflow
+## Workflow
 
 The project follows a modular pipeline approach with each step generating outputs for subsequent steps. While you can now use `main.py` to orchestrate the entire workflow, understanding the individual stages is valuable for development and troubleshooting.
 
@@ -234,6 +247,94 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
 - If modifying feature engineering, remember that changes will require retraining the model
 - GPU acceleration is recommended for the feature engineering step (BERT embeddings)
 - Check the notebook outputs to visualize performance metrics after model training
+
+### Workflow Diagram
+
+```mermaid
+flowchart TD
+    %% Data Sources
+    raw[(Raw Zipped Data)]
+    
+    %% Unzip Process
+    subgraph stage1[Stage 1: Unzip & Repackage]
+        unzip[00_unzip_and_repackage.py]
+        
+        subgraph outputs1[Outputs]
+            f1[/00_products_labeled.parquet/]
+            f2[/00_products_unlabeled.parquet/]
+        end
+        
+        unzip -.-> outputs1
+    end
+    
+    %% Feature Engineering
+    subgraph stage2[Stage 2: Feature Engineering]
+        engineer[01_feature_engineering.py]
+        
+        subgraph outputs2[Outputs]
+            f3[/01_products_engineered.parquet/]
+        end
+        
+        engineer -.-> outputs2
+    end
+    
+    %% Model Training
+    subgraph stage3[Stage 3: Model Training & Tuning]
+        train[02_model_training_and_tuning.py]
+        
+        subgraph outputs3[Outputs]
+            f4[/02_predictions.parquet/]
+            f5[/02_x_test.parquet/]
+            f6[/02_category_mapping.json/]
+            f7[/model_artifacts/.../]
+        end
+        
+        train -.-> outputs3
+    end
+    
+    %% Performance Analysis
+    subgraph stage4[Stage 4: Performance & Explainability]
+        explain[03_performance_and_explainability.py]
+        
+        subgraph outputs4[Outputs]
+            f8[/03_confusion_matrix.parquet/]
+            f9[/03_global_importance.parquet/]
+            f10[/03_overall_metrics.parquet/]
+            f11[/03_per_class_metrics.parquet/]
+        end
+        
+        explain -.-> outputs4
+    end
+    
+    %% Notebooks
+    notebook1[data-discovery.ipynb]
+    notebook2[performance-and-explainability.ipynb]
+    
+    %% Main Pipeline Flow
+    raw --> stage1
+    stage1 --> stage2
+    stage2 --> stage3
+    stage3 --> stage4
+    
+    %% Notebook connections
+    stage1 -.-> notebook1
+    stage4 -.-> notebook2
+    
+    %% Styling
+    classDef process fill:#d9b3ff,stroke:#333,stroke-width:2px,color:#000
+    classDef data fill:#80b3ff,stroke:#333,stroke-width:2px,color:#000
+    classDef file fill:#f9e79f,stroke:#333,stroke-width:1px,color:#000
+    classDef stage fill:#e0e0e0,stroke:#333,stroke-width:1px,color:#000
+    classDef outputs fill:#e8f4f8,stroke:#333,stroke-width:1px,color:#000
+    classDef notebook fill:#a8d08d,stroke:#333,stroke-width:2px,color:#000
+    
+    class unzip,engineer,train,explain process
+    class raw data
+    class f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11 file
+    class stage1,stage2,stage3,stage4 stage
+    class outputs1,outputs2,outputs3,outputs4 outputs
+    class notebook1,notebook2 notebook
+```
 
 ## methodology
 
@@ -306,20 +407,24 @@ flowchart TD
     end
 
     subgraph text[Text Processing]
-        C1[Text Fields\nTitle, Features, Description]
+        C1["Text Fields
+            Title, Features, Description"]
         C2[Cleaning & Standardization]
         C3[List Field Concatenation]
-        C4[DistilBERT Embeddings\n768 dimensions]
+        C4["DistilBERT Embeddings
+            768 dimensions"]
         C5[TruncatedSVD\n50 dimensions per field]
         
         C1 --> C2 --> C3 --> C4 --> C5
     end
 
     subgraph details[Details Processing]
-        D1[Details Field\nNested Structure]
+        D1["Details Field
+            Nested Structure"]
         D2[Field Name Standardization]
         D3[Merge Duplicate Columns]
-        D4[Binary Encoding\n0/1 for presence]
+        D4["Binary Encoding
+            0/1 for presence"]
         D5[Sparse PCA\n50 dimensions]
         
         D1 --> D2 --> D3 --> D4 --> D5
