@@ -290,6 +290,62 @@ The preprocessing pipeline addresses the heterogeneous nature of the data throug
 
 This approach balances information preservation with computational efficiency.
 
+```mermaid
+flowchart TD
+    subgraph input[Input]
+        A[Raw Product Data]
+    end
+
+    subgraph numeric[Numeric Processing]
+        B1[Price Field]
+        B2[Log Transform]
+        B3[Min-Max Normalization]
+        B4[Float32 Conversion]
+        
+        B1 --> B2 --> B3 --> B4
+    end
+
+    subgraph text[Text Processing]
+        C1[Text Fields\nTitle, Features, Description]
+        C2[Cleaning & Standardization]
+        C3[List Field Concatenation]
+        C4[DistilBERT Embeddings\n768 dimensions]
+        C5[TruncatedSVD\n50 dimensions per field]
+        
+        C1 --> C2 --> C3 --> C4 --> C5
+    end
+
+    subgraph details[Details Processing]
+        D1[Details Field\nNested Structure]
+        D2[Field Name Standardization]
+        D3[Merge Duplicate Columns]
+        D4[Binary Encoding\n0/1 for presence]
+        D5[Sparse PCA\n50 dimensions]
+        
+        D1 --> D2 --> D3 --> D4 --> D5
+    end
+
+    subgraph output[Output]
+        E[Engineered Features Dataset]
+    end
+
+    A --> numeric
+    A --> text
+    A --> details
+    
+    B4 --> output
+    C5 --> output
+    D5 --> output
+
+    classDef process fill:#d9b3ff,stroke:#333,stroke-width:2px,color:#000
+    classDef data fill:#80b3ff,stroke:#333,stroke-width:2px,color:#000
+    classDef output fill:#66cc66,stroke:#333,stroke-width:2px,color:#000
+
+    class A,B1,C1,D1 data
+    class B2,B3,B4,C2,C3,C4,C5,D2,D3,D4,D5 process
+    class E output
+```
+
 #### Model Selection
 XGBoost was selected as the classification algorithm for these key reasons:
 
