@@ -17,6 +17,13 @@ The purpose of this repo is to take semi-structured data describing products, pe
 │   ├── 03_global_importance.parquet
 │   ├── 03_overall_metrics.parquet
 │   └── 03_per_class_metrics.parquet
+├── config/                       # contains a .css file used for docs conversion
+│   └── custom.css
+├── docs/                         # contains flat file documentation 
+│   ├── Product-Spec.pdf
+│   ├── Product-Spec.md
+│   ├── Data-Discovery.pdf
+│   └── Performance-and-Explainability.pdf
 ├── notebooks/                    # analysis and visualization of the process
 │   ├── data-discovery.ipynb
 │   └── performance-and-explainability.ipynb
@@ -24,7 +31,7 @@ The purpose of this repo is to take semi-structured data describing products, pe
 │   ├── 00_products_zipped.parquet
 │   ├── 01_products_engineered.parquet
 │   ├── 01_applied_results.csv
-│   ├── 01_applied_results.parquet
+│   └── 01_applied_results.parquet
 ├── scripts/                      # python scripts that execute all core tasks
 │   ├── _00_unzip_and_repackage.py
 │   ├── _01_feature_engineering.py
@@ -97,11 +104,82 @@ uv pip uninstall torch torchvision torchaudio
 uv pip install torch torchvision torchaudio --torch-backend=cu118
 ```
 
-> Note: The PyTorch GPU package is approximately 3GB in size
+pandoc ./docs/Design-Spec.md -o ./docs/Design-Spec.html -F mermaid-filter.cmd --standalone --css=./docs/custom.css
 
-## script execution
+> Note: The PyTorch GPU package is approximately 3GB in size and may take several minutes to download
+
+## Docs
+
+The docs section contains several documents flat file documents that can be accessed and shared. They include:
+
+> .pdf version of all docs are provided, however not all features were available via pdf format; use of either the .html version of the docs is recommended; all .html docs can be opened via any browser  
+
+> Dependencies are required for the file conversion operations below; full instructions will not be given here 
+
+### Product-Spec.md
+- contains the following information:
+
+```
+├── 1. Problem
+│   └── Key Challenges
+├── 2. Assumptions
+├── 3. Solution Design
+│   ├── 3.1 Data Preprocessing
+│   ├── 3.2 ML Model Selection
+│   ├── 3.3 Training
+│   ├── 3.4 Hyperparameter Tuning
+│   ├── 3.5 Testing
+│   ├── 3.6 Metrics
+│   ├── 3.7 Deployment
+│   ├── 3.8 Monitoring
+│   └── 3.9 Maintenance
+├── 4. Alternative Solutions
+└── 5. Open Questions
+```
+
+### Product-Spec.html
+- contains identical contains to Product-Spec.md
+- converted from .md to .html via Pandoc:
+
+```bash
+pandoc ./docs/Design-Spec.md -o ./docs/Design-Spec.html -F mermaid-filter.cmd --standalone --css=./config/custom.css
+```
+
+### Product-Spec.pdf
+- contains identical contains to Product-Spec.md
+- manually converted from .html to .pdf 
+
+
+### Data-Discovery.html
+- .html copy of `./notebooks/data-discovery.ipynb`
+- converted to .html via nbconvert: 
+
+```bash
+jupyter nbconvert --to html "./notebooks/data-discovery.ipynb" --output-dir "./docs/" --output "Data-Discovery"
+```
+
+### Data-Discovery.pdf
+- .pdf copy of `./notebooks/data-discovery.ipynb`
+- manually converted from `.docs/Data-Discovery.html` 
+
+### Performance-and-Explainability.html
+- .html copy of `./notebooks/performance-and-explainability.ipynb`
+- converted to .html via nbconvert:
+
+```bash
+jupyter nbconvert --to html "./notebooks/performance-and-explainability.ipynb" --output-dir "./docs/" --output "Performance-and-Explainability"
+````
+
+### Performance-and-Explainability.pdf
+- .pdf copy of `./notebooks/performance-and-explainability.ipynb`
+- manually converted from `.docs/Data-Discovery.html`
+
+
+## Script Execution
 
 The project provides a central entry point through `main.py` that orchestrates the execution of individual scripts. You can run the entire pipeline or specific parts based on your needs.
+
+> Note: This project is principally and academic project and not intended for production use. This code should be considered brittle. This code base contains insufficient error handling and unexpected parameters will produce errors. 
 
 ### Basic Usage
 
@@ -161,11 +239,6 @@ python main.py --run engineer --data-dir "./results"
 python main.py --run apply --data-dir "./results"
 ```
 
-### Run full pipeline with set numer of random iterations and custom subsample size
-```bash
-python main.py --random-iterations 500 ---subsample-size 10000	 
-```
-
 ### Examples
 
 1. Process data and train with a larger subsample:
@@ -185,6 +258,13 @@ python main.py --data-dir ./custom_data --run train
 ```bash
 python main.py --input-dir ./raw_data --data-dir ./processed_data
 ```
+
+4.  Run full pipeline with set numer of random iterations and custom subsample size
+
+```bash
+python main.py --random-iterations 500 ---subsample-size 10000	 
+```
+
 
 ### Resource Considerations
 
