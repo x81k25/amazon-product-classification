@@ -7,36 +7,19 @@ The purpose of this repo is to take semi-structured data describing products, pe
 ```
 ├── data/                         # data files containing data at various stages of processing
 │   ├── model_artifacts/          # saved model files and parameters
-│   ├── zipped/                   # raw compressed source data files
-│   ├── 00_products_zipped.parquet
-│   ├── 01_products_engineered.parquet
-│   ├── 02_category_mapping.json
-│   ├── 02_predictions.parquet
-│   ├── 02_x_test.parquet
-│   ├── 03_confusion_matrix.parquet
-│   ├── 03_global_importance.parquet
-│   ├── 03_overall_metrics.parquet
-│   └── 03_per_class_metrics.parquet
+│   └──  zipped/                   # raw compressed source data files
 ├── config/                       # contains a .css file used for docs conversion
-│   └── custom.css
 ├── docs/                         # contains flat file documentation 
-│   ├── Product-Spec.pdf
-│   ├── Product-Spec.md
-│   ├── Data-Discovery.pdf
-│   └── Performance-and-Explainability.pdf
 ├── notebooks/                    # analysis and visualization of the process
 │   ├── data-discovery.ipynb
 │   └── performance-and-explainability.ipynb
 ├── results/                      # contained data items used with the apply_model script
-│   ├── 00_products_zipped.parquet
-│   ├── 01_products_engineered.parquet
-│   ├── 01_applied_results.csv
-│   └── 01_applied_results.parquet
 ├── scripts/                      # python scripts that execute all core tasks
 │   ├── _00_unzip_and_repackage.py
 │   ├── _01_feature_engineering.py
 │   ├── _02_model_training_and_tuning.py
-│   └── _03_performance_and_explainability.py
+│   ├── _03_performance_and_explainability.py
+│   └── _04_apply_model.py
 ├── venv/                         # python virtual environment
 ├── .gitignore
 ├── main.py                       # main entry point for the pipeline

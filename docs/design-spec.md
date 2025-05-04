@@ -29,25 +29,25 @@ This project addresses the challenge of automatically classifying product listin
 An initial glance at the training data will easily tell you that the biggest problem here is going to be feature engineering. The model selection and hyperparameter tuning, and evaluation will be straightforward, but many iterations will need to be done in order to process different versions of engineered features in order to determine which will yield the best results.
 
 - Highly heterogeneous data structures
-  - see the data-discovery notebook or docs for details
+  - See the data-discovery notebook or docs for details
 - Low number of numeric fields, high number of string fields
-  - sematic value will have to be extracted from string fields for processing
+  - Sematic value will have to be extracted from string fields for processing
 - Natively high dimensional feature space
-  - across the data set the Details element contains ~200 unique fields
+  - Across the data set the Details element contains ~200 unique fields
   - Features and Description element contain list contains many sub-elements
 - Time and compute constraints
-  - high dimensional feature space will increase training time
-  - extracting semantic value from text can be compute intensive
+  - High dimensional feature space will increase training time
+  - Extracting semantic value from text can compute intensive
   - 28 unique classes within the target label
   - ~43k data elements to train on
 
 ## 2. Assumptions
 
-- The unlabaled data is simliar to the labled data
+- The unlabeled data is similar to the labeled data
   - All analysis was done on the labeled dataset
-  - We are assuming the unlabled data is fundamentally simliar 
+  - We are assuming the unlabeled data is fundamentally similar 
   - No systematic testing is done in this project to verify this
-  - We will assume that future batches of unlabled data will be fundamentally simliar
+  - We will assume that future batches of unlabeled data will be fundamentally similar
   - The only check we have against data drift, is some model monitoring, covered below
 - Text fields (Title, Features, Description) contain some valuable semantic information
 - Details field contains useful classification signals despite variability across products
@@ -463,6 +463,6 @@ This section covers both code maintenance practices to ensure project longevity 
 
 ## 5. Open Questions
 
-- My first and probably biggest questions is how well the alternate solutions mentioned in the above section would actually work? ~90% accuracy isn't terrible, but I don't feel really good about a model until I get at least a few 9's.   
+- My first and probably my biggest questions is how well the alternate solutions mentioned in the above section would actually work? ~90% accuracy isn't terrible, but I don't feel really good about a model until I get at least a few 9's.   
 - How well would this model work given the actual number of training items an online retailer is likely to have if we were able to grab a sample that went back a few years in time (which I suspect could be in the millions for large online retailers)?
-- How would this model do over time
+- How would this model do over time, assuming there would be some level of data drift over time?
