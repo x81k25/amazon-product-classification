@@ -1,5 +1,25 @@
 # Amazon Product Classification System Design Specification
 
+## TOC
+
+```
+├── 1. Problem
+│   └── Key Challenges
+├── 2. Assumptions
+├── 3. Solution Design
+│   ├── 3.1 Data Preprocessing
+│   ├── 3.2 ML Model Selection
+│   ├── 3.3 Training
+│   ├── 3.4 Hyperparameter Tuning
+│   ├── 3.5 Testing
+│   ├── 3.6 Metrics
+│   ├── 3.7 Deployment
+│   ├── 3.8 Monitoring
+│   └── 3.9 Maintenance
+├── 4. Alternative Solutions
+└── 5. Open Questions
+```
+
 ## 1. Problem
 
 This project addresses the challenge of automatically classifying product listings into appropriate categories based on their attributes. The system uses semi-structured data containing product details to perform multi-class classification across 28 predefined categories.
@@ -24,11 +44,11 @@ An initial glance at the training data will easily tell you that the biggest pro
 ## 2. Assumptions
 
 - The unlabaled data is simliar to the labled data
-  - all analysis was done on the labeled dataset
-  - we are assuming the unlabled data is fundamentally simliar 
-  - no systematic testing is done in this project to verify this
-  - we will assume that future batches of unlabled data will be fundamentally simliar
-  - the only check we have against data drift, is some model monitoring, covered below
+  - All analysis was done on the labeled dataset
+  - We are assuming the unlabled data is fundamentally simliar 
+  - No systematic testing is done in this project to verify this
+  - We will assume that future batches of unlabled data will be fundamentally simliar
+  - The only check we have against data drift, is some model monitoring, covered below
 - Text fields (Title, Features, Description) contain some valuable semantic information
 - Details field contains useful classification signals despite variability across products
 - Tree-based models will handle heterogeneous data effectively
@@ -157,10 +177,16 @@ XGBoost was selected as the classification algorithm for these reasons:
   - Initial experiments with GridSearchCV indicated a full grid search would require approximately 4-5 days, making it impractical for iterative development
 
 - **Parameter Selection Considerations**
-  - n_estimators range (100-300) reflected the complexity required for the 28-class problem with high-dimensional feature space
-  - max_depth values (4-8) balanced the need to capture complex interactions between text embeddings and product details against overfitting concerns
-  - learning_rate values (0.01-0.05-0.1) were selected to balance convergence speed with stability for heterogeneous feature spaces
-  - Regularization parameters (subsample, colsample_bytree) ranges were narrowed to 0.8-0.9 based on preliminary tests showing that more aggressive regularization harmed performance on minority classes
+
+| Parameter | Range | Rationale |
+|-----------|-------|-----------|
+| n_estimators | 100-300 | Complexity required for 28-class problem with high-dimensional feature space |
+| max_depth | 4-8 | Balance between capturing complex interactions and preventing overfitting |
+| learning_rate | 0.01-0.05-0.1 | Balance convergence speed with stability for heterogeneous features |
+| min_child_weight | 1, 3, 5 | Control model complexity and handle noisy data |
+| gamma | 0, 0.1, 0.2 | Fine-tune node splitting thresholds |
+| subsample, colsample_bytree | 0.8-0.9 | Provide regularization without harming minority class performance |
+
 
 - **Final Hyperparameter Profile**
   - The optimized hyperparameters collectively reflect a model tuned for this specific product classification challenge
@@ -168,6 +194,7 @@ XGBoost was selected as the classification algorithm for these reasons:
   - The moderate learning_rate=0.05 combined with min_child_weight=1 and gamma=0 suggests the feature engineering effectively reduced noise, allowing the model to utilize subtle patterns
   - subsample=0.8 and colsample_bytree=0.9 provide just enough regularization to prevent overfitting on high-dimensional text embeddings while preserving signal
   - Detailed analysis of hyperparameter selection rationale is available in `notebooks/performance-and-explainability.ipynb`
+
 
 ### 3.5 Testing
 
@@ -197,6 +224,15 @@ XGBoost was selected as the classification algorithm for these reasons:
   - Notable gap between macro and weighted metrics indicates class imbalance impact
   - Macro recall (~80%) emerged as the lowest metric, suggesting challenges with minority categories
 
+| Metric Type | Value | Description |
+|-------------|-------|-------------|
+| Overall Accuracy | ~90% | Percentage of correctly classified products |
+| Top-3 Accuracy | >97% | Percentage where correct category appears in top 3 predictions |
+| Top-5 Accuracy | >98% | Percentage where correct category appears in top 5 predictions |
+| Macro F1 | ~85% | Average F1 score across all categories |
+| Macro Recall | ~80% | Average recall across all categories (lowest metric) |
+| Weighted F1 | ~90% | F1 score weighted by class frequency |
+
 - **Per-Class Performance Analysis**
   - Generated confusion matrix to identify cross-category confusion patterns, particularly between related product groups
   - Calculated per-class metrics to pinpoint category-specific performance variations
@@ -210,49 +246,6 @@ XGBoost was selected as the classification algorithm for these reasons:
   - Found structured data fields (details) and title embeddings provided the strongest classification signals
   - Determined that product details_3 field had by far the highest importance (0.46)
   - Concluded that detailed performance visualizations and analysis are available in `notebooks/performance-and-explainability.ipynb`
-
-### 3.7 Deployment
-
-This section outlines both the current implementation approach and a potential production deployment strategy. The command-line execution framework described first represents what was practical for this academic research project given time and resource constraints. The subsequent production implementation proposal presents a more robust architecture that would be appropriate for deploying this classification system in a real-world enterprise environment with high reliability, scalability, and monitoring requirements.
-
-- **Code Execution**
-  - Project provides a central entry point through `main.py` that orchestrates the execution of individual scripts
-  - The pipeline can be run with default settings using a simple command: `python main.py`
-  - Execution can be customized with command-line arguments for input location, subsample size, and processing steps
-  - For running only specific steps: `python main.py --run unzip engineer` or `python main.py --run apply`
-  - For detailed execution instructions and available parameters, refer to the README.md
-
-- **Production Implementation Proposal**
-  - **Containerization**: Package the model training pipeline in Docker containers to ensure consistency across environments
-    - Separate containers for data processing, model training, and inference to enable independent scaling
-    - Use base images with pre-installed dependencies (Python, PyTorch, etc.) to reduce build time
-    - Include GPU support for feature engineering and model training acceleration
-
-  - **Orchestration**:
-    - Implement Airflow DAGs to manage the model lifecycle
-    - Schedule regular retraining (monthly/quarterly) based on data volume
-    - Configure data drift detection triggers to initiate retraining when distribution shifts occur
-    - Implement threshold-based training triggers (e.g., when 5,000+ new products are available)
-
-  - **Model Registry and Versioning**:
-    - Use MLflow to track experiments, log parameters, metrics, and model artifacts
-    - Store model versions with associated performance metrics for comparison
-    - Implement A/B testing framework for new model candidates before promotion
-    - Configure automatic rollback mechanisms if performance degrades
-
-  - **Storage and Serving**:
-    - Store model artifacts and training data in S3 or MinIO object storage
-    - Implement data versioning to track dataset evolution over time
-    - Deploy trained models as microservices behind API endpoints using FastAPI
-    - Implement batched prediction endpoints for bulk classification
-    - Set up monitoring for prediction latency and error rates
-
-  - **Monitoring**:
-    - Deploy Prometheus and Grafana for real-time performance monitoring
-    - Implement prediction logging for offline analysis
-    - Configure alerts for model drift and performance degradation
-    - Create dashboards for category-specific performance metrics
-    - Schedule periodic retraining evaluation to compare against baseline
 
 ### 3.7 Deployment
 
@@ -377,6 +370,14 @@ This section covers both code maintenance practices to ensure project longevity 
 
 ### Low-Engineering-Time Improvements
 
+| Approach | Description | Complexity | Expected Benefit |
+|----------|-------------|------------|------------------|
+| Enhanced Hyperparameter Optimization | Replace RandomizedSearchCV with GridSearchCV for exhaustive evaluation | Low | Marginal accuracy improvement (1-2%) |
+| Advanced Text Embedding Models | Replace DistilBERT with full BERT or more advanced transformer models | Medium | Better semantic understanding of product text |
+| Better Feature Dimensionality Reduction | Replace TruncatedSVD/SparsePCA with UMAP for nonlinear dimensionality reduction | Medium | Potentially better feature space representation |
+| Enhanced Preprocessing | Add more sophisticated text cleaning, improved null handling | Low | Small improvement in edge cases |
+| Traditional ML Alternatives | Implement Random Forest, Logistic Regression with L1, Naive Bayes for text, or LightGBM as XGBoost alternative | Low-Medium | Better interpretability or faster training with comparable performance |
+
 **Enhanced Hyperparameter Optimization**
 - Replace RandomizedSearchCV with GridSearchCV for exhaustive evaluation of all hyperparameter combinations
 - Expand hyperparameter search space with finer granularity (more values per parameter)
@@ -401,7 +402,22 @@ This section covers both code maintenance practices to ensure project longevity 
 - Apply feature scaling to more numeric fields in the dataset
 - Increase maximum token length for BERT embeddings to capture longer product descriptions
 
+**Traditional ML Alternatives**
+- Implement Random Forest with feature importance analysis to identify the most discriminative product attributes
+- Explore linear models like Logistic Regression with L1 regularization for interpretable feature selection
+- Apply Naive Bayes classifiers specifically optimized for the text components of product data
+- Consider gradient-boosted decision trees like LightGBM as an efficient alternative to XGBoost with different regularization mechanics
+
 ### Substantial Re-architecture Solutions
+
+| Approach | Description | Complexity | Expected Benefit |
+|----------|-------------|------------|------------------|
+| Fine-Grained Feature Engineering | Process individual detail fields with specialized techniques | High | Better use of product-specific attributes |
+| Advanced Text Processing | Generate embeddings for manufacturer/SKU, apply topic modeling | High | Extract more semantic information |
+| External Data Integration | Utilize third-party datasets matched via SKU | High | Additional context for classification |
+| Deep Learning Approaches | Multi-modal neural networks handling text, categorical, and numerical data | Very High | Potential for significant accuracy gains |
+| Ensemble Methods | Build diverse model ensemble combining tree-based and neural approaches | High | Improved robustness and accuracy |
+| Hierarchical Classification | Implement two-stage classification process (main → subcategory) | Medium | Better handling of similar product types |
 
 **Fine-Grained Feature Engineering**
 - Process individual detail fields with specialized techniques instead of binary encoding
@@ -447,9 +463,6 @@ This section covers both code maintenance practices to ensure project longevity 
 
 ## 5. Open Questions
 
-1. How would the model perform on new products from categories not represented in training?
-2. Could a more sophisticated approach to the Details field further improve performance?
-3. Would incorporating image data (if available) significantly improve classification accuracy?
-4. How stable is model performance over time as product descriptions and attributes evolve?
-5. What is the minimum set of features needed to maintain current accuracy?
-6. Could the system be extended to recommend new categories when products don't fit existing ones?
+- My first and probably biggest questions is how well the alternate solutions mentioned in the above section would actually work? ~90% accuracy isn't terrible, but I don't feel really good about a model until I get at least a few 9's.   
+- How well would this model work given the actual number of training items an online retailer is likely to have if we were able to grab a sample that went back a few years in time (which I suspect could be in the millions for large online retailers)?
+- How would this model do over time
