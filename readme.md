@@ -7,7 +7,7 @@ The purpose of this repo is to take semi-structured data describing products, pe
 ```
 ├── data/                         # data files containing data at various stages of processing
 │   ├── model_artifacts/          # saved model files and parameters
-│   └──  zipped/                   # raw compressed source data files
+│   └── zipped/                   # raw compressed source data files
 ├── config/                       # contains a .css file used for docs conversion
 ├── docs/                         # contains flat file documentation 
 ├── notebooks/                    # analysis and visualization of the process
