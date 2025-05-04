@@ -51,11 +51,6 @@ def main(
     category_mapping = dict(zip(le.classes_, le.transform(le.classes_)))
     print(f"Number of classes: {len(le.classes_)}")
 
-    # create full data set train/test/val split
-    # Extract features and target
-    X = df.drop('category', axis=1)
-    y = le.fit_transform(df['category'])
-
     # First create the full dataset splits
     X_train_val, X_test, y_train_val, y_test = train_test_split(
         X,

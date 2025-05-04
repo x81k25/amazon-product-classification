@@ -132,8 +132,8 @@ pandoc ./docs/Design-Spec.md -o ./docs/Design-Spec.html -F mermaid-filter.cmd --
 - contains identical contains to Product-Spec.md
 - manually converted from .html to .pdf 
 
-
 ### Data-Discovery.html
+- analyses raw dataset and goes over decisions on feature selection, before conducting feature engineering
 - .html copy of `./notebooks/data-discovery.ipynb`
 - converted to .html via nbconvert: 
 
@@ -146,6 +146,7 @@ jupyter nbconvert --to html "./notebooks/data-discovery.ipynb" --output-dir "./d
 - manually converted from `.docs/Data-Discovery.html` 
 
 ### Performance-and-Explainability.html
+- covers global and individual label model performance and briefly covers input feature explainability 
 - .html copy of `./notebooks/performance-and-explainability.ipynb`
 - converted to .html via nbconvert:
 
@@ -156,7 +157,6 @@ jupyter nbconvert --to html "./notebooks/performance-and-explainability.ipynb" -
 ### Performance-and-Explainability.pdf
 - .pdf copy of `./notebooks/performance-and-explainability.ipynb`
 - manually converted from `.docs/Data-Discovery.html`
-
 
 ## Script Execution
 
@@ -181,6 +181,8 @@ This will execute all steps sequentially:
 ### Command Line Arguments
 
 The following arguments are available to customize execution:
+
+> Using the --run command it is possible to run individual steps. However, each step does require data form the previous step, and will error out if that data is not present. All data needed for the current training data is included, but this should be noted if using new training data. 
 
 ```bash
 python main.py [OPTIONS]
