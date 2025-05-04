@@ -8,8 +8,7 @@ The purpose of this repo is to take semi-structured data describing products, pe
 ├── data/                         # data files containing data at various stages of processing
 │   ├── model_artifacts/          # saved model files and parameters
 │   ├── zipped/                   # raw compressed source data files
-│   ├── 00_products_labeled.parquet
-│   ├── 00_products_unlabeled.parquet
+│   ├── 00_products_zipped.parquet
 │   ├── 01_products_engineered.parquet
 │   ├── 02_category_mapping.json
 │   ├── 02_predictions.parquet
@@ -21,6 +20,11 @@ The purpose of this repo is to take semi-structured data describing products, pe
 ├── notebooks/                    # analysis and visualization of the process
 │   ├── data-discovery.ipynb
 │   └── performance-and-explainability.ipynb
+├── results/                      # contained data items used with the apply_model script
+│   ├── 00_products_zipped.parquet
+│   ├── 01_products_engineered.parquet
+│   ├── 01_applied_results.csv
+│   ├── 01_applied_results.parquet
 ├── scripts/                      # python scripts that execute all core tasks
 │   ├── _00_unzip_and_repackage.py
 │   ├── _01_feature_engineering.py
@@ -144,17 +148,22 @@ python main.py --run train
 python main.py --run explain
 ```
 
-### Run pipeline on new unlabled data
+### Run pipeline on new unlabeled data
 
 ```bash
 # unzip and place output in results folder
- python main.py --run unzip --input-zip "./data/zipped/products_unlabeled.json.gz" --data-dir "./results"
+python main.py --run unzip --input-zip "./data/zipped/products_unlabeled.json.gz" --data-dir "./results"
 
 # perform feature engineering
 python main.py --run engineer --data-dir "./results"
 
 # run model and store results
+python main.py --run apply --data-dir "./results"
+```
 
+### Run full pipeline with set numer of random iterations and custom subsample size
+```bash
+python main.py --random-iterations 500 ---subsample-size 10000	 
 ```
 
 ### Examples
@@ -240,6 +249,15 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
   - `./data/03_overall_metrics.parquet`
   - `./data/03_per_class_metrics.parquet`
 
+#### 5. `_04_apply_model.py`
+
+- Loads the most recently trained XGBoost model
+- Applies the model to unlabeled product data
+- Converts numeric predictions to category names using the mapping
+- Outputs:
+  - `./data/04_applied_results.parquet`
+  - `./data/04_applied_results.csv`
+
 ### Workflow Tips
 
 - To rerun the entire pipeline with the original dataset, use `main.py` with default parameters
@@ -247,6 +265,7 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
 - If modifying feature engineering, remember that changes will require retraining the model
 - GPU acceleration is recommended for the feature engineering step (BERT embeddings)
 - Check the notebook outputs to visualize performance metrics after model training
+- Use the apply option with main.py to run predictions on new unlabeled data
 
 ### Workflow Diagram
 
@@ -306,6 +325,18 @@ flowchart TD
         explain -.-> outputs4
     end
     
+    %% Model Application
+    subgraph stage5[Stage 5: Model Application]
+        apply[04_apply_model.py]
+        
+        subgraph outputs5[Outputs]
+            f12[/04_applied_results.parquet/]
+            f13[/04_applied_results.csv/]
+        end
+        
+        apply -.-> outputs5
+    end
+    
     %% Notebooks
     notebook1[data-discovery.ipynb]
     notebook2[performance-and-explainability.ipynb]
@@ -314,8 +345,9 @@ flowchart TD
     raw --> stage1
     stage1 --> stage2
     stage2 --> stage3
+    stage2 --> stage5
     stage3 --> stage4
-    
+        
     %% Notebook connections
     stage1 -.-> notebook1
     stage4 -.-> notebook2
@@ -328,11 +360,11 @@ flowchart TD
     classDef outputs fill:#e8f4f8,stroke:#333,stroke-width:1px,color:#000
     classDef notebook fill:#a8d08d,stroke:#333,stroke-width:2px,color:#000
     
-    class unzip,engineer,train,explain process
+    class unzip,engineer,train,explain,apply process
     class raw data
-    class f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11 file
-    class stage1,stage2,stage3,stage4 stage
-    class outputs1,outputs2,outputs3,outputs4 outputs
+    class f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13 file
+    class stage1,stage2,stage3,stage4,stage5 stage
+    class outputs1,outputs2,outputs3,outputs4,outputs5 outputs
     class notebook1,notebook2 notebook
 ```
 
