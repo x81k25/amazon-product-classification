@@ -1,0 +1,18 @@
+body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2em;
+  font-family: "Times New Roman", Times, serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Times New Roman", Times, serif;
+}
+
+.mermaid {
+  width: 100%;
+}
+
+p, li, ol, ul {
+  font-family: "Times New Roman", Times, serif;
+}
