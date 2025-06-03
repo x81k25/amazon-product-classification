@@ -280,8 +280,7 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
 - Extracts raw products from `.gz` files in `./data/zipped/`
 - Converts raw JSON data to Polars dataframes
 - Outputs:
-  - `./data/00_products_labeled.parquet`
-  - `./data/00_products_unlabeled.parquet`
+  - `./data/00_products_unzipped.parquet`
 - Note: Using parquet format reduces storage by ~75% compared to raw JSON
 
 #### 2. `_01_feature_engineering.py`
@@ -289,7 +288,14 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
   - Numeric field normalization (price)
   - Text field transformations using DistilBERT embeddings
   - Detail field binary encoding and dimensionality reduction
-- Outputs: `./data/01_products_engineered.parquet`
+- Saves feature engineering artifacts for inference
+- Outputs: 
+  - `./data/01_products_engineered.parquet`
+  - `./data/01_normalization_constants.json`
+  - `./data/model_artifacts/sparse_pca_*.pkl`
+  - `./data/model_artifacts/svd_title_*.pkl`
+  - `./data/model_artifacts/svd_features_*.pkl`
+  - `./data/model_artifacts/svd_description_*.pkl`
 
 #### 3. `_02_model_training_and_tuning.py`
 - Creates train/validation/test splits
@@ -312,9 +318,12 @@ The processing scripts in the `scripts/` directory handle the core data pipeline
   - `./data/03_per_class_metrics.parquet`
 
 #### 5. `_04_apply_model.py`
-
-- Loads the most recently trained XGBoost model
-- Applies the model to unlabeled product data
+- Loads the most recently trained XGBoost model and feature engineering artifacts
+- Performs complete feature engineering pipeline on unlabeled data:
+  - Numeric field normalization using saved constants
+  - BERT embeddings with saved SVD transformers
+  - Details field processing with saved SparsePCA transformer
+- Applies the model to generate predictions
 - Converts numeric predictions to category names using the mapping
 - Outputs:
   - `./data/04_applied_results.parquet`
@@ -337,44 +346,50 @@ flowchart TD
     raw[(Raw Zipped Data)]
     
     %% Unzip Process
-    subgraph stage1[Stage 1: Unzip & Repackage]
+    subgraph stage1[Stage 0: Unzip & Repackage]
         unzip[00_unzip_and_repackage.py]
         
         subgraph outputs1[Outputs]
-            f1[/00_products_labeled.parquet/]
-            f2[/00_products_unlabeled.parquet/]
+            f1[/00_products_unzipped.parquet/]
         end
         
         unzip -.-> outputs1
     end
     
     %% Feature Engineering
-    subgraph stage2[Stage 2: Feature Engineering]
+    subgraph stage2[Stage 1: Feature Engineering]
         engineer[01_feature_engineering.py]
         
         subgraph outputs2[Outputs]
             f3[/01_products_engineered.parquet/]
+            f14[/01_normalization_constants.json/]
+            f15[/sparse_pca_*.pkl/]
+            f16[/svd_title_*.pkl/]
+            f17[/svd_features_*.pkl/]
+            f18[/svd_description_*.pkl/]
         end
         
         engineer -.-> outputs2
     end
     
     %% Model Training
-    subgraph stage3[Stage 3: Model Training & Tuning]
+    subgraph stage3[Stage 2: Model Training & Tuning]
         train[02_model_training_and_tuning.py]
         
         subgraph outputs3[Outputs]
             f4[/02_predictions.parquet/]
             f5[/02_x_test.parquet/]
             f6[/02_category_mapping.json/]
-            f7[/model_artifacts/.../]
+            f7[/xgb_best_model_*.pkl/]
+            f19[/xgb_best_params_*.json/]
+            f20[/xgb_training_metadata_*.json/]
         end
         
         train -.-> outputs3
     end
     
     %% Performance Analysis
-    subgraph stage4[Stage 4: Performance & Explainability]
+    subgraph stage4[Stage 3: Performance & Explainability]
         explain[03_performance_and_explainability.py]
         
         subgraph outputs4[Outputs]
@@ -388,8 +403,8 @@ flowchart TD
     end
     
     %% Model Application
-    subgraph stage5[Stage 5: Model Application]
-        apply[04_apply_model.py]
+    subgraph stage5[Stage 4: Model Application]
+        apply[04_apply_model.py<br/>Includes Feature Engineering]
         
         subgraph outputs5[Outputs]
             f12[/04_applied_results.parquet/]
@@ -407,8 +422,11 @@ flowchart TD
     raw --> stage1
     stage1 --> stage2
     stage2 --> stage3
-    stage2 --> stage5
     stage3 --> stage4
+    
+    %% New data flow - bypasses stage2
+    stage1 -.-> stage5
+    stage3 -.-> stage5
         
     %% Notebook connections
     stage1 -.-> notebook1
@@ -424,7 +442,7 @@ flowchart TD
     
     class unzip,engineer,train,explain,apply process
     class raw data
-    class f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13 file
+    class f1,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20 file
     class stage1,stage2,stage3,stage4,stage5 stage
     class outputs1,outputs2,outputs3,outputs4,outputs5 outputs
     class notebook1,notebook2 notebook
