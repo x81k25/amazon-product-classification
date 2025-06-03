@@ -217,9 +217,6 @@ python main.py --run explain
 # unzip and place output in results folder
 python main.py --run unzip --input-zip "./data/zipped/products_unlabeled.json.gz" --data-dir "./results"
 
-# perform feature engineering
-python main.py --run engineer --data-dir "./results"
-
 # run model and store results
 python main.py --run apply --data-dir "./results"
 ```

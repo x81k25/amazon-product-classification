@@ -1,7 +1,10 @@
 # internal library imports
 import argparse
-import re
+from datetime import datetime
+import json
 import os
+import pickle
+import re
 import sys
 
 # third-party imports
@@ -11,7 +14,6 @@ import torch
 from sklearn.decomposition import TruncatedSVD, SparsePCA
 from transformers import AutoTokenizer, AutoModel
 from tqdm.auto import tqdm
-
 
 # -----------------------------------------------------------------------------
 # read in labeled data
@@ -61,6 +63,15 @@ def main(input_dir):
 	df = df.with_columns(
 		price_log_norm=pl.col('price_log_norm').cast(pl.Float32)
 	)
+
+	# Save normalization constants
+	normalization_constants = {
+		"log_min": float(log_min),
+		"log_max": float(log_max)
+	}
+
+	with open(os.path.join(data_dir, '01_normalization_constants.json'), 'w') as f:
+		json.dump(normalization_constants, f)
 
 	# remove no longer used columns
 	df = df.drop(['price', 'price_log'])
@@ -265,6 +276,38 @@ def main(input_dir):
 		'sku',
 		'manufacturer',
 	)
+
+	# -----------------------------------------------------------------------------
+	# save object for inference
+	# -----------------------------------------------------------------------------
+	
+	# Create a directory for saving if it doesn't exist
+	save_dir = os.path.join(data_dir, "model_artifacts")
+	os.makedirs(save_dir, exist_ok=True)
+
+	# Save SparsePCA transformer
+	timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+	save_dir = os.path.join(data_dir, "model_artifacts")
+	os.makedirs(save_dir, exist_ok=True)
+
+	sparse_pca_file = os.path.join(save_dir, f"sparse_pca_{timestamp}.pkl")
+	with open(sparse_pca_file, 'wb') as f:
+		pickle.dump(sparse_pca, f)
+
+	# Save SVD transformer for title
+	svd_title_file = os.path.join(save_dir, f"svd_title_{timestamp}.pkl")
+	with open(svd_title_file, 'wb') as f:
+		pickle.dump(svd, f)
+	
+	# Save SVD transformer for features  
+	svd_features_file = os.path.join(save_dir, f"svd_features_{timestamp}.pkl")
+	with open(svd_features_file, 'wb') as f:
+		pickle.dump(svd, f)
+
+	# Save SVD transformer for description
+	svd_desc_file = os.path.join(save_dir, f"svd_description_{timestamp}.pkl")
+	with open(svd_desc_file, 'wb') as f:
+		pickle.dump(svd, f)
 
 	# -----------------------------------------------------------------------------
 	# write processed data
